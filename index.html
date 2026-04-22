@@ -1383,7 +1383,7 @@ function RichiesteTab({data,save,user,isAdmin,centroId}){
       (form.tipoRichiesta==='personale'&&form.nDipendenti?`👷 <b>Dipendenti richiesti:</b> ${form.nDipendenti}\n`:'')+
       (form.dataRichiesta?`📅 <b>Data:</b> ${form.dataRichiesta}\n`:'')+
       (form.note?`💬 <b>Note:</b> ${form.note}\n`:'')+
-      `\n🔗 <a href="https://deft-pasca-c768bc.netlify.app/">Apri gestionale → Richieste</a>`;
+      `\n🔗 <a href="https://siciliaverdedigiambo-eng.github.io/sicilia-verde/">Apri gestionale → Richieste</a>`;
     await tgSend(TG_ADMIN_CHATID, msg);
     setSaving(false);close();
   };
