@@ -1750,8 +1750,7 @@ function App(){
   },[user]);
 
   function sanitize(tbl,item){
-    if(tbl!=='lavorazioni')return item;
-    return{...item,
+    if(tbl==='lavorazioni')return{...item,
       data:item.data||null,
       ore:item.ore!=null&&item.ore!==''?parseFloat(item.ore):null,
       dipendentiIds:item.dipendentiIds||[],
@@ -1759,6 +1758,20 @@ function App(){
       priorita:item.priorita||'',
       stato:item.stato||'proposta'
     };
+    if(tbl==='richieste')return{...item,
+      dataRichiesta:item.dataRichiesta||null,
+      nDipendenti:parseInt(item.nDipendenti)||0,
+      dipendentiIds:item.dipendentiIds||[],
+      urgente:!!item.urgente,
+      stato:item.stato||'pendente',
+      tipoRichiesta:item.tipoRichiesta||'personale',
+      descrizione:item.descrizione||'',
+      note:item.note||'',
+      noteAdmin:item.noteAdmin||'',
+      createdBy:item.createdBy||'',
+      rispostaAt:item.rispostaAt||null
+    };
+    return item;
   }
   async function save(newData){
     const tables=['centri','settori','dipendenti','tipi','utenti','lavorazioni','richieste'];
