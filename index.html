@@ -82,7 +82,7 @@ const SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const SBH={'apikey':SBKEY,'Authorization':'Bearer '+SBKEY,'Content-Type':'application/json','Prefer':'return=representation'};
 
 const TG_TOKEN='8667632385:AAGTi_OXc58JxSNqL5Unlrl22ip3vcE64PM';
-const TG_ADMIN_CHATID=616409100; // Chat ID Natale Giambò
+const TG_ADMIN_CHATID=[616409100,1629110310]; // Natale Giambò, Titolare
 const TG_CHATIDS={
   'EV': 6398602481,
   'CZ': 8769196578,
@@ -1414,7 +1414,7 @@ function RichiesteTab({data,save,user,isAdmin,centroId}){
       (form.dataRichiesta?`📅 <b>Data:</b> ${form.dataRichiesta}\n`:'')+
       (form.note?`💬 <b>Note:</b> ${form.note}\n`:'')+
       `\n🔗 <a href="https://siciliaverdedigiambo-eng.github.io/sicilia-verde/">Apri gestionale → Richieste</a>`;
-    await tgSend(TG_ADMIN_CHATID, msg);
+    for(const cid of [].concat(TG_ADMIN_CHATID))await tgSend(cid, msg);
     setSaving(false);close();
   };
 
