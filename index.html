@@ -487,7 +487,7 @@ function LavForm({data,save,centroId,onDone,adminMode}){
   const [selCentro,setSelCentro]=useState(centroId||'');
   const effCentro=centroId||selCentro;
   const settori=(data.settori||[]).filter(s=>s.centroId===effCentro);
-  const INIT={data:'',settoreId:'',tipoId:'',dipendentiIds:[],oreMap:{},quantita:'',note:'',stato:'proposta',priorita:''};
+  const INIT={data:'',settoreId:'',tipoId:'',dipendentiIds:[],oreMap:{},quantita:'',note:'',stato:'proposta',priorita:'',varietaId:''};
   const [form,setForm]=useState(INIT);const [err,setErr]=useState({});const [saving,setSaving]=useState(false);
   const F=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
   const tog=id=>setForm(f=>{
@@ -502,12 +502,29 @@ function LavForm({data,save,centroId,onDone,adminMode}){
   const submit=async()=>{
     const e={};
     if(adminMode&&!effCentro)e.c=1;
-    if(!form.settoreId)e.s=1;
     if(Object.keys(e).length){setErr(e);return;}
     setSaving(true);
     const totOre=form.dipendentiIds.reduce((s,id)=>s+(parseFloat(form.oreMap[id])||0),0);
-    const newLav={id:gid(),centroId:effCentro,...form,stato:'proposta',ore:totOre||null,oreMap:form.oreMap,createdAt:new Date().toISOString()};
+    const newLav={id:gid(),centroId:effCentro,...form,stato:'proposta',ore:totOre||null,oreMap:form.oreMap,varietaId:form.varietaId||'',createdAt:new Date().toISOString()};
     await save({...data,lavorazioni:[...data.lavorazioni,newLav]});
+
+    // Notifica Telegram al responsabile se inserita dall'admin
+    if(adminMode){
+      const centro=(data.centri||[]).find(x=>x.id===effCentro);
+      const settore=(data.settori||[]).find(x=>x.id===form.settoreId);
+      const tipo=(data.tipi||[]).find(x=>x.id===form.tipoId);
+      const pLab={alta:'🔴 ALTA',media:'🟡 MEDIA',bassa:'🟢 BASSA','':''}[form.priorita||''];
+      const msg='\uD83C\uDF3F <b>Sicilia Verde \u2014 Nuova lavorazione assegnata</b>\n\n'+
+        '\uD83D\uDCCD <b>Centro:</b> '+(centro?.nome||'\u2014')+'\n'+
+        '\uD83C\uDF31 <b>Settore:</b> '+(settore?.nome||'\u2014')+'\n'+
+        '\uD83D\uDD27 <b>Tipo:</b> '+(tipo?.nome||'\u2014')+'\n'+
+        (form.data?'\uD83D\uDCC5 <b>Data prevista:</b> '+form.data+'\n':'')+
+        (pLab?'\u26A1 <b>Priorit\u00E0:</b> '+pLab+'\n':'')+
+        (form.quantita?'\uD83D\uDCE6 <b>Quantit\u00E0:</b> '+form.quantita+'\n':'')+
+        (form.note?'\uD83D\uDCDD <b>Note:</b> '+form.note+'\n':'')+
+        '\n\uD83D\uDD17 <a href="https://siciliaverdedigiambo-eng.github.io/sicilia-verde/">Apri gestionale</a>';
+      await notifyResponsabili(effCentro, msg, data);
+    }
 
     setForm(INIT);setErr({});setSaving(false);onDone();
   };
@@ -531,13 +548,21 @@ function LavForm({data,save,centroId,onDone,adminMode}){
     ),
     h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'10px',marginBottom:'12px'}},
       h('div',null,h('label',{className:'lbl'},isCompleta?'Data *':'Data prevista'),h('input',{type:'date',value:form.data,onChange:F('data'),style:err.d?er:{}})),
-      h('div',null,h('label',{className:'lbl'},'Settore *'),
-        h('select',{value:form.settoreId,onChange:F('settoreId'),style:err.s?er:{}},
-          h('option',{value:''},'— Seleziona —'),
+      h('div',null,h('label',{className:'lbl'},'Settore (opzionale)'),
+        h('select',{value:form.settoreId,onChange:F('settoreId')},
+          h('option',{value:''},'— Nessun settore specifico —'),
           settori.map(s=>h('option',{key:s.id,value:s.id},s.nome))
         )
       ),
-      h('div',null,h('label',{className:'lbl'},isCompleta?'Tipo lavorazione *':'Tipo lavorazione'),
+      h('div',null,h('label',{className:'lbl'},'Varietà (opzionale)'),
+        h('select',{value:form.varietaId||'',onChange:F('varietaId')},
+          h('option',{value:''},'— Tutto il settore —'),
+          form.settoreId&&((data.settori||[]).find(s=>s.id===form.settoreId)?.varieta||[]).filter(v=>v.nome).map((v,i)=>
+            h('option',{key:i,value:v.nome},v.nome+(v.vaso?' ('+v.vaso+')':'')+(v.quantita?' — '+v.quantita.toLocaleString('it-IT')+' p.':''))
+          )
+        )
+      ),
+      h('div',null,h('label',{className:'lbl'},'Tipo lavorazione (opzionale)'),
         h('select',{value:form.tipoId,onChange:F('tipoId'),style:err.t?er:{}},
           h('option',{value:''},'— Seleziona —'),
           (data.tipi||[]).map(t=>h('option',{key:t.id,value:t.id},t.nome))
@@ -885,7 +910,7 @@ function DaFareTab({data,save,centroId}){
       ?h('div',{className:'card'},h('p',{style:{fontSize:'14px',color:'#666'}},'Nessuna lavorazione da fare. 🎉'))
       :h('div',{className:'card',style:{padding:0,overflowX:'auto',WebkitOverflowScrolling:'touch'}},
         h('table',{className:'tbl'},
-          h('thead',null,h('tr',null,h('th',null,'Priorità'),h('th',null,'Data prevista'),!centroId&&h('th',null,'Centro'),h('th',null,'Settore'),h('th',null,'Tipo'),h('th',null,'Dipendenti'),h('th',null,'Quantità'),h('th',null,'Note'),h('th',{style:{width:'120px'}}))),
+          h('thead',null,h('tr',null,h('th',null,'Priorità'),h('th',null,'Data prevista'),!centroId&&h('th',null,'Centro'),h('th',null,'Settore'),h('th',null,'Varietà'),h('th',null,'Tipo'),h('th',null,'Dipendenti'),h('th',null,'Quantità'),h('th',null,'Note'),h('th',{style:{width:'120px'}}))),
           h('tbody',null,myLav.map(l=>{
             const s=(data.settori||[]).find(x=>x.id===l.settoreId);
             const t=(data.tipi||[]).find(x=>x.id===l.tipoId);
@@ -901,6 +926,7 @@ function DaFareTab({data,save,centroId}){
               ),
               !centroId&&h('td',{style:{fontSize:'13px'}},((data.centri||[]).find(x=>x.id===l.centroId)?.nome)||'—'),
               h('td',null,s?.nome||'—'),
+              h('td',{style:{fontSize:'12px',color:'#3B6D11'}},l.varietaId||'—'),
               h('td',null,t?.nome||'—'),
               h('td',{style:{fontSize:'12px',color:'#666',maxWidth:'130px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},nomi||h('span',{style:{color:'#bbb',fontStyle:'italic'}},'non assegnati')),
               h('td',{style:{fontSize:'12px',color:'#666'}},l.quantita||'—'),
@@ -969,12 +995,12 @@ function CompletateTab({data,save,centroId}){
     h('div',{className:'card',style:{padding:0,overflowX:'auto',WebkitOverflowScrolling:'touch'}},
       myLav.length===0?h('p',{style:{padding:'1rem',fontSize:'13px',color:'#666'}},'Nessuna lavorazione completata.'):
       h('table',{className:'tbl'},
-        h('thead',null,h('tr',null,h('th',null,'Data'),h('th',null,'Settore'),h('th',null,'Tipo'),h('th',{style:{textAlign:'center'}},'Dip.'),h('th',null,'Ore tot.'),h('th',null,'Quantità'),h('th',null,'Note'),h('th',{style:{width:'90px'}}))),
+        h('thead',null,h('tr',null,h('th',null,'Data'),h('th',null,'Settore'),h('th',null,'Varietà'),h('th',null,'Tipo'),h('th',{style:{textAlign:'center'}},'Dip.'),h('th',null,'Ore tot.'),h('th',null,'Quantità'),h('th',null,'Note'),h('th',{style:{width:'90px'}}))),
         h('tbody',null,myLav.map(l=>{
           const s=(data.settori||[]).find(x=>x.id===l.settoreId);
           const t=(data.tipi||[]).find(x=>x.id===l.tipoId);
           return h('tr',{key:l.id},
-            h('td',null,l.data),h('td',null,s?.nome||'—'),h('td',null,t?.nome||'—'),
+            h('td',null,l.data),h('td',null,s?.nome||'—'),h('td',{style:{fontSize:'12px',color:'#3B6D11'}},l.varietaId||'—'),h('td',null,t?.nome||'—'),
             h('td',{style:{textAlign:'center'}},(l.dipendentiIds||[]).length),
             h('td',null,l.ore?l.ore.toFixed(1)+'h':'—'),
             h('td',{style:{fontSize:'12px',color:'#666'}},l.quantita||'—'),
@@ -1100,7 +1126,7 @@ function ReportTab({data,centroId}){
     const s=(data.settori||[]).find(x=>x.id===l.settoreId);
     const t=(data.tipi||[]).find(x=>x.id===l.tipoId);
     const nomi=(l.dipendentiIds||[]).map(id=>{const d=(data.dipendenti||[]).find(x=>x.id===id);return d?d.cognome+' '+(d.nome||''):'?';}).join(', ');
-    return{centro:c2?.nome||'',settore:s?.nome||'',tipo:t?.nome||'',nomi,ore:l.ore||0};
+    return{centro:c2?.nome||'',settore:s?.nome||'',tipo:t?.nome||'',varieta:l.varietaId||'',nomi,ore:l.ore||0};
   };
 
   const exportXls=()=>{
@@ -1109,13 +1135,13 @@ function ReportTab({data,centroId}){
     // Sheet 1: Dettaglio lavorazioni
     const hasDip=!!f.dipId;
     const dipName=hasDip?((data.dipendenti||[]).find(x=>x.id===f.dipId)||{}).cognome||'':'';
-    const hdr1=['Data','Centro','Settore','Tipo lavorazione','Dipendenti'];
+    const hdr1=['Data','Centro','Settore','Varietà','Tipo lavorazione','Dipendenti'];
     if(hasDip)hdr1.push('Ore '+dipName);
     hdr1.push('Ore totali','Quantità','Note');
     const rows1=[hdr1];
     lav.forEach(l=>{
       const{centro,settore,tipo,nomi,ore}=getNome(l);
-      const row=[l.data||'',centro,settore,tipo,nomi];
+      const row=[l.data||'',centro,settore,varieta,tipo,nomi];
       if(hasDip)row.push(parseFloat((l.oreMap||{})[f.dipId])||0);
       row.push(ore,l.quantita||'',l.note||'');
       rows1.push(row);
@@ -1197,6 +1223,7 @@ function ReportTab({data,centroId}){
           h('th',null,'Data'),
           !centroId&&h('th',null,'Centro'),
           h('th',null,'Settore'),
+          h('th',null,'Varietà'),
           h('th',null,'Tipo'),
           h('th',null,'Dipendenti'),
           f.dipId&&h('th',{style:{textAlign:'right',color:'#3B6D11'}},'Ore indiv.'),
@@ -1210,6 +1237,7 @@ function ReportTab({data,centroId}){
             h('td',null,l.data||'—'),
             !centroId&&h('td',{style:{fontSize:'13px'}},centro),
             h('td',null,settore),
+            h('td',{style:{fontSize:'12px',color:'#3B6D11'}},varieta||'—'),
             h('td',null,tipo),
             h('td',{style:{fontSize:'12px',color:'#666',maxWidth:'180px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},nomi||'—'),
             f.dipId&&h('td',{style:{textAlign:'right',color:'#3B6D11',fontWeight:500}},
@@ -1345,7 +1373,9 @@ function RichiesteTab({data,save,user,isAdmin,centroId}){
     {id:'altro',    label:'📦 Altro',          desc:'Altra necessità'},
   ];
 
+  const [mostraChiuse,setMostraChiuse]=useState(false);
   const richieste=(data.richieste||[]).filter(r=>{
+    if(!mostraChiuse&&r.stato==='chiusa')return false;
     if(isAdmin){if(centroId&&r.centroId!==centroId)return false;return true;}
     return(user.centroIds||[]).includes(r.centroId);
   }).sort((a,b)=>{
@@ -1414,17 +1444,24 @@ function RichiesteTab({data,save,user,isAdmin,centroId}){
   const STATO={
     pendente:  {label:'In attesa', bg:'#FAC775',tx:'#633806'},
     approvata: {label:'Approvata', bg:'#C0DD97',tx:'#27500A'},
-    rifiutata: {label:'Rifiutata', bg:'#F7C1C1',tx:'#A32D2D'}
+    rifiutata: {label:'Rifiutata', bg:'#F7C1C1',tx:'#A32D2D'},
+    chiusa:    {label:'Chiusa',    bg:'#D3D1C7',tx:'#444441'}
   };
   const TIPO_ICON={personale:'👷',attrezzatura:'🔧',altro:'📦'};
 
   return h('div',null,
-    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem'}},
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem',flexWrap:'wrap',gap:'8px'}},
       h('div',null,
         h('h3',{style:{fontSize:'15px',fontWeight:500,marginBottom:'2px'}},'Richieste'),
         pendenti>0&&h('span',{style:{fontSize:'13px',color:'#A32D2D',fontWeight:500}},pendenti+' in attesa di risposta')
       ),
-      !isAdmin&&h('button',{onClick:apriNuova,className:'btn-g'},'+ Nuova richiesta')
+      h('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
+        h('label',{style:{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#666',cursor:'pointer'}},
+          h('input',{type:'checkbox',checked:mostraChiuse,onChange:e=>setMostraChiuse(e.target.checked),style:{width:'16px',height:'16px'}}),
+          'Mostra chiuse'
+        ),
+        !isAdmin&&h('button',{onClick:apriNuova,className:'btn-g'},'+ Nuova richiesta')
+      )
     ),
 
     richieste.length===0
@@ -1444,6 +1481,7 @@ function RichiesteTab({data,save,user,isAdmin,centroId}){
               ),
               h('div',{style:{display:'flex',gap:'6px'}},
                 isAdmin&&r.stato==='pendente'&&h('button',{onClick:()=>apriGestisci(r),className:'btn-g sm'},'Rispondi'),
+                r.stato!=='pendente'&&r.stato!=='chiusa'&&h('button',{onClick:async()=>{await save({...data,richieste:(data.richieste||[]).map(x=>x.id===r.id?{...x,stato:'chiusa'}:x)});},className:'btn-n sm'},'✓ Chiudi'),
                 h('button',{onClick:()=>del(r.id),className:'btn-r sm'},'🗑')
               )
             ),
@@ -1716,7 +1754,7 @@ function App(){
       .then(([centri,settori,dipendenti,tipi,utenti,lavorazioni,richieste])=>{
         const normSett=settori.map(s=>({...s,varieta:(s.varieta||[]).map(v=>({nome:v.nome||'',quantita:v.quantita||0,vaso:v.vaso||'',fornitore:v.fornitore||'',dataEntrata:v.dataEntrata||''})),note:s.note||'',lunghezza:s.lunghezza||null,larghezza:s.larghezza||null}));
         settori=normSett;
-        const normLav=lavorazioni.map(l=>({...l,dipendentiIds:l.dipendentiIds||[],oreMap:l.oreMap||{},data:l.data||'',priorita:l.priorita||'',stato:l.stato||'proposta'}));
+        const normLav=lavorazioni.map(l=>({...l,dipendentiIds:l.dipendentiIds||[],oreMap:l.oreMap||{},data:l.data||'',priorita:l.priorita||'',stato:l.stato||'proposta',varietaId:l.varietaId||''}));
         const d={centri,settori,dipendenti,tipi,utenti,lavorazioni:normLav,richieste:richieste||[]};
         setData(d);ref.current=d;setLoading(false);
       })
@@ -1725,13 +1763,38 @@ function App(){
 
   // Auto-refresh lavorazioni ogni 60s quando l'admin è loggato
   // Auto-refresh for all users every 30s
+  const lastReminderRef=useRef(0);
   useEffect(()=>{
     if(!user)return;
     const t=setInterval(()=>{
       Promise.all([sbGet('lavorazioni'),sbGet('richieste')]).then(([lavorazioni,richieste])=>{
-        const normLav=lavorazioni.map(l=>({...l,dipendentiIds:l.dipendentiIds||[],oreMap:l.oreMap||{},data:l.data||'',priorita:l.priorita||'',stato:l.stato||'proposta'}));
+        const normLav=lavorazioni.map(l=>({...l,dipendentiIds:l.dipendentiIds||[],oreMap:l.oreMap||{},data:l.data||'',priorita:l.priorita||'',stato:l.stato||'proposta',varietaId:l.varietaId||''}));
         const nd={...ref.current,lavorazioni:normLav,richieste:richieste||[]};
         setData(nd);ref.current=nd;
+
+        // Reminder urgenti ogni 30 minuti (solo admin)
+        if(user.ruolo==='admin'){
+          const now=Date.now();
+          if(now-lastReminderRef.current>=30*60*1000){
+            const urgenti=(richieste||[]).filter(r=>r.stato==='pendente'&&r.urgente);
+            if(urgenti.length>0){
+              lastReminderRef.current=now;
+              const lines=urgenti.map(r=>{
+                const centro=(nd.centri||[]).find(x=>x.id===r.centroId);
+                return '🚨 '+(centro?.nome||'—')+' — '+r.descrizione;
+              }).join('\n');
+              tgSend(TG_ADMIN_CHATID,
+                `⏰ <b>Reminder Sicilia Verde</b>
+
+Hai ${urgenti.length} richiesta${urgenti.length>1?'e':''} urgente${urgenti.length>1?'':''} in attesa di risposta:
+
+${lines}
+
+🔗 <a href="https://siciliaverdedigiambo-eng.github.io/sicilia-verde/">Apri gestionale → Richieste</a>`
+              );
+            }
+          }
+        }
       }).catch(()=>{});
     },30000);
     return()=>clearInterval(t);
@@ -1741,7 +1804,7 @@ function App(){
     if(!user||user.ruolo!=='admin')return;
     const t=setInterval(()=>{
       Promise.all([sbGet('lavorazioni'),sbGet('richieste')]).then(([lavorazioni,richieste])=>{
-        const normLav=lavorazioni.map(l=>({...l,dipendentiIds:l.dipendentiIds||[],oreMap:l.oreMap||{},data:l.data||'',priorita:l.priorita||'',stato:l.stato||'proposta'}));
+        const normLav=lavorazioni.map(l=>({...l,dipendentiIds:l.dipendentiIds||[],oreMap:l.oreMap||{},data:l.data||'',priorita:l.priorita||'',stato:l.stato||'proposta',varietaId:l.varietaId||''}));
         const nd={...ref.current,lavorazioni:normLav,richieste:richieste||[]};
         setData(nd);ref.current=nd;
       }).catch(()=>{});
@@ -1756,7 +1819,8 @@ function App(){
       dipendentiIds:item.dipendentiIds||[],
       oreMap:item.oreMap||{},
       priorita:item.priorita||'',
-      stato:item.stato||'proposta'
+      stato:item.stato||'proposta',
+      varietaId:item.varietaId||''
     };
     if(tbl==='richieste')return{...item,
       dataRichiesta:item.dataRichiesta||null,
