@@ -1731,7 +1731,7 @@ function RespSettoriTab({data,save,centroId}){
         ),
         s.varieta&&s.varieta.length>0&&h('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px',marginTop:'6px'}},
           s.varieta.filter(v=>v.nome).map((v,i)=>h('span',{key:i,style:{fontSize:'11px',background:'#EAF3DE',color:'#27500A',borderRadius:'4px',padding:'2px 8px'}},
-            v.nome+(v.vaso?' '+v.vaso:'')+(v.quantita?' ('+v.quantita.toLocaleString('it-IT')+')':'')
+            v.nome+(v.vaso?' v.'+v.vaso:'')+(v.quantita?' ('+v.quantita.toLocaleString('it-IT')+')':'')
           ))
         ),
         s.note&&h('p',{style:{fontSize:'12px',color:'#888',marginTop:'6px'}},s.note)
