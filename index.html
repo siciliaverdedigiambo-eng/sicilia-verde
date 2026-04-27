@@ -1630,23 +1630,28 @@ function RespSettoriTab({data,save,centroId}){
       h('h3',{style:{fontSize:'15px',fontWeight:500}},centro?.nome||'',' — ',setts.length,' settori'),
       h('button',{onClick:()=>openSettore(),className:'btn-g sm'},'+ Aggiungi')
     ),
-    h('div',{className:'card',style:{padding:0,overflowX:'auto',WebkitOverflowScrolling:'touch'}},
-      setts.length===0?h('p',{style:{padding:'1rem',fontSize:'13px',color:'#666'}},'Nessun settore.'):
-      h('table',{className:'tbl'},
-        h('thead',null,h('tr',null,
-          h('th',null,'Settore'),h('th',{style:{textAlign:'right'}},'Piante'),
-          h('th',null,'Varietà'),h('th',null,'Serra (m)'),h('th',{style:{width:'60px'}})
-        )),
-        h('tbody',null,setts.map(s=>h('tr',{key:s.id},
-          h('td',{style:{fontWeight:500}},s.nome),
-          h('td',{style:{textAlign:'right',color:'#666',fontSize:'13px'}},s.capacita?(s.capacita).toLocaleString('it-IT'):'—'),
-          h('td',{style:{fontSize:'12px',color:'#666',maxWidth:'150px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},
-            s.varieta&&s.varieta.length>0?s.varieta.map(v=>v.nome+(v.vaso?' ('+v.vaso+')':'')).filter(Boolean).join(', ')||'—':'—'
+    h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},
+      setts.length===0?h('div',{className:'card',style:{textAlign:'center',padding:'2rem'}},
+        h('p',{style:{color:'#666',fontSize:'14px'}},'Nessun settore.')
+      ):
+      setts.map(s=>h('div',{key:s.id,className:'card',style:{cursor:'pointer'},onClick:()=>openSettore(s)},
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'6px'}},
+          h('div',null,
+            h('div',{style:{fontWeight:600,fontSize:'15px'}},s.nome),
+            s.capacita>0&&h('div',{style:{fontSize:'13px',color:'#3B6D11',marginTop:'2px'}},'🌱 '+s.capacita.toLocaleString('it-IT')+' piante')
           ),
-          h('td',{style:{fontSize:'13px',color:'#666'}},s.lunghezza&&s.larghezza?s.lunghezza+'×'+s.larghezza:'—'),
-          h('td',null,h('button',{onClick:()=>openSettore(s),className:'btn-n sm'},'✏️'))
-        )))
-      )
+          h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+            s.lunghezza&&s.larghezza&&h('span',{style:{fontSize:'12px',color:'#888'}},s.lunghezza+'×'+s.larghezza+' m'),
+            h('span',{style:{fontSize:'20px',color:'#ccc'}},'›')
+          )
+        ),
+        s.varieta&&s.varieta.length>0&&h('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px',marginTop:'6px'}},
+          s.varieta.filter(v=>v.nome).map((v,i)=>h('span',{key:i,style:{fontSize:'11px',background:'#EAF3DE',color:'#27500A',borderRadius:'4px',padding:'2px 8px'}},
+            v.nome+(v.vaso?' '+v.vaso:'')+(v.quantita?' ('+v.quantita.toLocaleString('it-IT')+')':'')
+          ))
+        ),
+        s.note&&h('p',{style:{fontSize:'12px',color:'#888',marginTop:'6px'}},s.note)
+      ))
     ),
     modal==='settore'&&h(Modal,{title:form.id?'Modifica settore':'Nuovo settore',onClose:close},
       h('label',{className:'lbl'},'Nome settore *'),
@@ -1847,14 +1852,14 @@ function RespApp({data,save,user,logout}){
       )
     ),
 
-    // FAB + button (solo per proposte e richieste)
-    (tab==='proposte')&&h('button',{
-      onClick:()=>setShowForm(true),
-      className:'fab'
-    },'+'),
-    (tab==='richieste')&&h('button',{
-      onClick:()=>setShowRich(true),
-      className:'fab'
+    // FAB sempre visibile (azione contestuale per tab)
+    ['confermate','proposte','richieste'].includes(tab)&&!['settori','completate','report'].includes(tab)&&h('button',{
+      onClick:()=>{
+        if(tab==='richieste')setShowRich(true);
+        else{setTab('proposte');setShowForm(true);}
+      },
+      className:'fab',
+      title:'Nuova proposta'
     },'+'),
 
     // Bottom Navigation Bar
