@@ -291,26 +291,27 @@ function CentriTab({data,save}){
         ),
 
         h('label',{className:'lbl'},'Varietà di piante'),
-        h('div',{style:{border:'1px solid #e5e5e5',borderRadius:'8px',overflow:'hidden',marginBottom:'8px'}},
-          (form.varieta||[]).length>0&&h('div',{style:{display:'grid',gridTemplateColumns:'2fr 60px 70px 1fr 100px 28px',gap:'0',background:'#f5f5f3',borderBottom:'1px solid #e5e5e5'}},
-            ['Varietà / tipologia','Q.tà','Vaso','Fornitore','Data entrata',''].map((lh,i)=>
-              h('span',{key:i,style:{padding:'5px 7px',fontSize:'11px',color:'#666',fontWeight:500}},lh)
-            )
-          ),
-          h('div',{style:{padding:'8px'}},
-            (form.varieta||[]).map((v,i)=>h('div',{key:i,style:{display:'grid',gridTemplateColumns:'2fr 60px 70px 1fr 100px 28px',gap:'5px',alignItems:'center',marginBottom:'5px'}},
-              h('input',{value:v.nome||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],nome:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Es. Rosa Rossa, Basilico...'}),
-              h('input',{type:'number',value:v.quantita||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],quantita:parseInt(e.target.value)||0};setForm(f=>({...f,varieta:vs}));},placeholder:'0',style:{textAlign:'right'}}),
-              h('input',{value:v.vaso||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],vaso:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Es. 14cm'}),
-              h('input',{value:v.fornitore||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],fornitore:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Fornitore'}),
-              h('input',{type:'date',value:v.dataEntrata||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],dataEntrata:e.target.value};setForm(f=>({...f,varieta:vs}));},style:{fontSize:'12px'}}),
-              h('button',{onClick:()=>setForm(f=>({...f,varieta:(f.varieta||[]).filter((_,j)=>j!==i)})),style:{background:'transparent',border:'none',color:'#A32D2D',cursor:'pointer',fontSize:'16px',lineHeight:1,padding:0}},'×')
-            )),
-            h('button',{
-              onClick:()=>setForm(f=>({...f,varieta:[...(f.varieta||[]),{nome:'',quantita:0,vaso:'',fornitore:'',dataEntrata:''}]})),
-              style:{background:'transparent',border:'1px dashed #3B6D11',borderRadius:'6px',color:'#3B6D11',cursor:'pointer',padding:'5px 12px',fontSize:'13px',width:'100%',marginTop:'2px'}
-            },'+ Aggiungi varietà')
-          )
+        h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'8px'}},
+          (form.varieta||[]).map((v,i)=>h('div',{key:i,style:{background:'#f9f9f7',borderRadius:'10px',padding:'10px',border:'1px solid #e5e5e5',position:'relative'}},
+            h('button',{onClick:()=>setForm(f=>({...f,varieta:(f.varieta||[]).filter((_,j)=>j!==i)})),
+              style:{position:'absolute',top:'8px',right:'8px',background:'transparent',border:'none',color:'#A32D2D',cursor:'pointer',fontSize:'18px',lineHeight:1,padding:0}},'×'),
+            h('label',{className:'lbl'},'Varietà / tipologia'),
+            h('input',{value:v.nome||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],nome:e.target.value};setForm(f=>({...f,varieta:vs}));},
+              placeholder:'Es. Rosa Rossa, Basilico...',style:{marginBottom:'8px'}}),
+            h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'8px'}},
+              h('div',null,h('label',{className:'lbl'},'Quantità'),h('input',{type:'number',value:v.quantita||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],quantita:parseInt(e.target.value)||0};setForm(f=>({...f,varieta:vs}));},placeholder:'0'})),
+              h('div',null,h('label',{className:'lbl'},'Vaso'),h('input',{value:v.vaso||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],vaso:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Es. 14cm'}))
+            ),
+            h('label',{className:'lbl'},'Fornitore'),
+            h('input',{value:v.fornitore||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],fornitore:e.target.value};setForm(f=>({...f,varieta:vs}));},
+              placeholder:'Nome fornitore',style:{marginBottom:'8px'}}),
+            h('label',{className:'lbl'},'Data entrata'),
+            h('input',{type:'date',value:v.dataEntrata||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],dataEntrata:e.target.value};setForm(f=>({...f,varieta:vs}));}})
+          )),
+          h('button',{
+            onClick:()=>setForm(f=>({...f,varieta:[...(f.varieta||[]),{nome:'',quantita:0,vaso:'',fornitore:'',dataEntrata:''}]})),
+            style:{background:'transparent',border:'1px dashed #3B6D11',borderRadius:'8px',color:'#3B6D11',cursor:'pointer',padding:'10px',fontSize:'14px',width:'100%'}
+          },'+ Aggiungi varietà')
         ),
         (form.varieta||[]).length>0&&h('p',{style:{fontSize:'12px',color:'#3B6D11',marginBottom:'14px'}},
           '📦 Totale piante: '+((form.varieta||[]).reduce((s,v)=>s+(parseInt(v.quantita)||0),0)).toLocaleString('it-IT')
@@ -1325,48 +1326,131 @@ function ReportTab({data,centroId}){
 
 /* ── ADMIN APP ── */
 function AdminApp({data,save,user,logout,refresh}){
-  const [tab,setTab]=useState('proposte');const [ok,setOk]=useState(false);
+  const [tab,setTab]=useState('proposte');
+  const [ok,setOk]=useState('');
   const [selCentroAdmin,setSelCentroAdmin]=useState('tutti');
-  const showCentroFilter=['proposte','confermate','completate'].includes(tab);
   const centroId=selCentroAdmin==='tutti'?null:selCentroAdmin;
 
-  const tabs=[
-    {id:'proposte',label:'Proposte ('+((data.lavorazioni||[]).filter(l=>l.stato==='proposta').length)+')'},
-    {id:'richieste',label:'Richieste pers. ('+((data.richieste||[]).filter(r=>r.stato==='pendente').length)+')'},
-    {id:'conferma',label:'Inserisci lavorazione'},
-    {id:'confermate',label:'Confermate'},
-    {id:'completate',label:'Completate'},
-    {id:'centri',label:'Centri & Settori'},
-    {id:'dip',label:'Dipendenti'},
-    {id:'tipi',label:'Tipi'},
-    {id:'utenti',label:'Utenti'},
-    {id:'tutte',label:'Tutte le lavorazioni'},
-    {id:'report',label:'Report'}
+  const nProposte=(data.lavorazioni||[]).filter(l=>l.stato==='proposta').length;
+  const nRichieste=(data.richieste||[]).filter(r=>r.stato==='pendente').length;
+  const nUrgenti=(data.richieste||[]).filter(r=>r.stato==='pendente'&&r.urgente).length;
+
+  const changeTab=t=>{setTab(t);setOk('');};
+
+  // Bottom nav tabs (primary)
+  const BNAV=[
+    {id:'proposte',   icon:'📋', label:'Proposte',  badge:nProposte},
+    {id:'richieste',  icon:'📬', label:'Richieste', badge:nRichieste, urgent:nUrgenti>0},
+    {id:'confermate', icon:'✅', label:'Confermate', badge:0},
+    {id:'altro',      icon:'⋯',  label:'Altro',     badge:0},
   ];
 
-  return h('div',{style:{minHeight:'100vh'}},
-    h(TopBar,{title:'Vista Admin',user,logout}),
-    h('div',{style:{padding:'1.25rem'},className:'main-pad'},
-      h(Tabs,{tabs,active:tab,onChange:t=>{setOk(false);setTab(t);}}),
-      ok&&h('div',{className:'success-box'},h('span',null,'✓ Salvato!'),h('button',{onClick:()=>setOk(false),className:'btn-n sm'},'×')),
-      showCentroFilter&&h('div',{style:{marginBottom:'1rem',display:'flex',alignItems:'center',gap:'10px'}},
-        h('label',{style:{fontSize:'14px',color:'#666'}},'Centro:'),
-        h('select',{value:selCentroAdmin,onChange:e=>setSelCentroAdmin(e.target.value),style:{width:'auto',minWidth:'200px'}},
-          h('option',{value:'tutti'},'Tutti i centri'),
-          (data.centri||[]).map(c=>h('option',{key:c.id,value:c.id},c.nome))
+  // Centro filter (compact select)
+  const centroFilter=h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'1rem',background:'#fff',borderRadius:'10px',padding:'8px 12px',border:'1px solid #e5e5e5'}},
+    h('span',{style:{fontSize:'13px',color:'#666',flexShrink:0}},'Centro:'),
+    h('select',{value:selCentroAdmin,onChange:e=>setSelCentroAdmin(e.target.value),style:{border:'none',background:'transparent',fontSize:'14px',fontWeight:500,color:'#1a1a1a',flex:1,outline:'none'}},
+      h('option',{value:'tutti'},'Tutti i centri'),
+      (data.centri||[]).map(c=>h('option',{key:c.id,value:c.id},c.nome))
+    )
+  );
+
+  return h('div',{style:{minHeight:'100vh',background:'#f3f4f2'}},
+    h('div',{className:'topbar'},
+      h('div',{style:{display:'flex',alignItems:'center',gap:'6px',flex:1,minWidth:0}},
+        h('img',{src:(data._logo||''),alt:'SV',style:{height:'28px',width:'auto',flexShrink:0}}),
+        h('div',{style:{minWidth:0}},
+          h('div',{style:{fontWeight:600,fontSize:'13px',lineHeight:1.2}},'Sicilia Verde'),
+          h('div',{style:{fontSize:'11px',color:'#888'}},'Admin')
         )
       ),
-      tab==='proposte'&&h(ProposteTab,{key:'prop_'+selCentroAdmin,data,save,centroId}),
-      tab==='richieste'&&h(RichiesteTab,{data,save,user,isAdmin:true,centroId}),
-      tab==='conferma'&&h(LavForm,{data,save,centroId:null,onDone:()=>setOk(true),adminMode:true}),
-      tab==='confermate'&&h(ConfermatTab,{key:'conf_'+selCentroAdmin,data,save,centroId}),
-      tab==='completate'&&h(CompletateTab,{key:'comp_'+selCentroAdmin,data,save,centroId}),
-      tab==='centri'&&h(CentriTab,{data,save}),
-      tab==='dip'&&h(DipendentiTab,{data,save}),
-      tab==='tipi'&&h(TipiTab,{data,save}),
-      tab==='utenti'&&h(UtentiTab,{data,save}),
-      tab==='tutte'&&h(TutteLavTab,{data,refresh}),
-      tab==='report'&&h(ReportTab,{data,centroId:null})
+      h('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
+        h('button',{onClick:async()=>{await refresh();setOk('✓ Aggiornato!');setTimeout(()=>setOk(''),2000);},style:{background:'transparent',border:'1px solid #e5e5e5',borderRadius:'8px',padding:'5px 10px',fontSize:'13px',cursor:'pointer'}},'🔄'),
+        h('button',{onClick:logout,className:'btn-n',style:{padding:'5px 10px',fontSize:'13px'}},'Esci')
+      )
+    ),
+
+    h('div',{className:'content-with-nav',style:{padding:'1rem'}},
+      ok&&h('div',{className:'success-box',style:{marginBottom:'1rem'}},h('span',null,ok),h('button',{onClick:()=>setOk(''),className:'btn-n sm'},'×')),
+
+      // TAB PROPOSTE
+      tab==='proposte'&&h('div',null,
+        centroFilter,
+        h(ProposteTab,{key:'prop_'+selCentroAdmin,data,save,centroId})
+      ),
+
+      // TAB RICHIESTE
+      tab==='richieste'&&h('div',null,
+        nUrgenti>0&&h('div',{style:{background:'#E24B4A',color:'#fff',borderRadius:'10px',padding:'10px 14px',marginBottom:'10px',display:'flex',alignItems:'center',gap:'10px'}},
+          h('span',{style:{fontSize:'20px'}},'🚨'),
+          h('span',{style:{fontWeight:600,fontSize:'14px'}},nUrgenti+' richiesta'+(nUrgenti>1?'e':'')+' urgente'+(nUrgenti>1?'':'')+' in attesa!')
+        ),
+        centroFilter,
+        h(RichiesteTab,{data,save,user,isAdmin:true,centroId})
+      ),
+
+      // TAB CONFERMATE
+      tab==='confermate'&&h('div',null,
+        centroFilter,
+        h(ConfermatTab,{key:'conf_'+selCentroAdmin,data,save,centroId})
+      ),
+
+      // TAB ALTRO — menu a card
+      tab==='altro'&&h('div',null,
+        h('p',{style:{fontSize:'13px',color:'#888',marginBottom:'12px'}},'Gestione e strumenti'),
+        h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},
+          [
+            {id:'inserisci', icon:'➕', label:'Inserisci lavorazione', sub:'Assegna lavoro a un centro'},
+            {id:'completate',icon:'📂', label:'Lavorazioni completate', sub:'Storico lavori finiti'},
+            {id:'tutte',     icon:'🗂', label:'Tutte le lavorazioni',  sub:'Vista completa con filtri'},
+            {id:'report',    icon:'📊', label:'Report e statistiche',  sub:'Analisi ore e lavorazioni'},
+            {id:'centri',    icon:'🌿', label:'Centri & Settori',      sub:'Gestisci struttura azienda'},
+            {id:'dip',       icon:'👷', label:'Dipendenti',            sub:'Anagrafica personale'},
+            {id:'tipi',      icon:'🔧', label:'Tipi lavorazione',      sub:'Configura tipi'},
+            {id:'utenti',    icon:'👤', label:'Utenti e responsabili', sub:'Gestisci accessi'},
+          ].map(item=>h('button',{key:item.id,onClick:()=>changeTab(item.id),className:'card',
+            style:{display:'flex',alignItems:'center',gap:'12px',border:'none',cursor:'pointer',textAlign:'left',WebkitTapHighlightColor:'transparent',width:'100%'}},
+            h('span',{style:{fontSize:'26px',flexShrink:0}},item.icon),
+            h('div',{style:{flex:1,minWidth:0}},
+              h('div',{style:{fontWeight:500,fontSize:'14px'}},item.label),
+              h('div',{style:{fontSize:'12px',color:'#999',marginTop:'1px'}},item.sub)
+            ),
+            h('span',{style:{fontSize:'18px',color:'#ccc'}},'›')
+          ))
+        )
+      ),
+
+      // SUB-TABS (con back button)
+      ['inserisci','completate','tutte','report','centri','dip','tipi','utenti'].includes(tab)&&h('div',null,
+        h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'1rem'}},
+          h('button',{onClick:()=>changeTab('altro'),style:{background:'transparent',border:'none',fontSize:'24px',cursor:'pointer',color:'#3B6D11',padding:'0 4px'}},'‹'),
+          h('h3',{style:{fontSize:'15px',fontWeight:500}},{
+            inserisci:'Inserisci lavorazione',completate:'Completate',tutte:'Tutte le lavorazioni',
+            report:'Report',centri:'Centri & Settori',dip:'Dipendenti',tipi:'Tipi lavorazione',utenti:'Utenti'
+          }[tab]||tab)
+        ),
+        ['completate','tutte'].includes(tab)&&centroFilter,
+        tab==='inserisci'&&h(LavForm,{data,save,centroId:null,onDone:()=>setOk('✓ Lavorazione inserita!'),adminMode:true}),
+        tab==='completate'&&h(CompletateTab,{key:'comp_'+selCentroAdmin,data,save,centroId}),
+        tab==='tutte'&&h(TutteLavTab,{data,refresh}),
+        tab==='report'&&h(ReportTab,{data,centroId:null}),
+        tab==='centri'&&h(CentriTab,{data,save}),
+        tab==='dip'&&h(DipendentiTab,{data,save}),
+        tab==='tipi'&&h(TipiTab,{data,save}),
+        tab==='utenti'&&h(UtentiTab,{data,save})
+      )
+    ),
+
+    // Bottom Nav
+    h('nav',{className:'bottom-nav'},
+      BNAV.map(t=>h('button',{
+        key:t.id,
+        className:'bnav-btn'+(tab===t.id||(tab==='proposte'&&t.id==='proposte')||(tab==='richieste'&&t.id==='richieste')||(tab==='confermate'&&t.id==='confermate')?' active':''),
+        onClick:()=>changeTab(t.id)
+      },
+        t.badge>0&&h('span',{className:'bnav-badge',style:t.urgent?{background:'#E24B4A'}:{}},t.badge>9?'9+':t.badge),
+        h('span',{className:'bnav-icon'},t.icon),
+        h('span',{className:'bnav-lbl'},t.label)
+      ))
     )
   );
 }
@@ -1658,26 +1742,27 @@ function RespSettoriTab({data,save,centroId}){
       h('input',{value:form.nome||'',onChange:F('nome'),style:{marginBottom:'14px'}}),
 
       h('label',{className:'lbl'},'Varietà di piante'),
-      h('div',{style:{border:'1px solid #e5e5e5',borderRadius:'8px',overflow:'hidden',marginBottom:'8px'}},
-        (form.varieta||[]).length>0&&h('div',{style:{display:'grid',gridTemplateColumns:'2fr 60px 70px 1fr 100px 28px',gap:'0',background:'#f5f5f3',borderBottom:'1px solid #e5e5e5'}},
-          ['Varietà','Q.tà','Vaso','Fornitore','Data',''].map((lh,i)=>
-            h('span',{key:i,style:{padding:'5px 7px',fontSize:'11px',color:'#666',fontWeight:500}},lh)
-          )
-        ),
-        h('div',{style:{padding:'8px'}},
-          (form.varieta||[]).map((v,i)=>h('div',{key:i,style:{display:'grid',gridTemplateColumns:'2fr 60px 70px 1fr 100px 28px',gap:'5px',alignItems:'center',marginBottom:'5px'}},
-            h('input',{value:v.nome||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],nome:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Varietà...'}),
-            h('input',{type:'number',value:v.quantita||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],quantita:parseInt(e.target.value)||0};setForm(f=>({...f,varieta:vs}));},placeholder:'0',style:{textAlign:'right'}}),
-            h('input',{value:v.vaso||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],vaso:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Vaso'}),
-            h('input',{value:v.fornitore||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],fornitore:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Fornitore'}),
-            h('input',{type:'date',value:v.dataEntrata||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],dataEntrata:e.target.value};setForm(f=>({...f,varieta:vs}));},style:{fontSize:'12px'}}),
-            h('button',{onClick:()=>setForm(f=>({...f,varieta:(f.varieta||[]).filter((_,j)=>j!==i)})),style:{background:'transparent',border:'none',color:'#A32D2D',cursor:'pointer',fontSize:'16px',lineHeight:1,padding:0}},'×')
-          )),
-          h('button',{
-            onClick:()=>setForm(f=>({...f,varieta:[...(f.varieta||[]),{nome:'',quantita:0,vaso:'',fornitore:'',dataEntrata:''}]})),
-            style:{background:'transparent',border:'1px dashed #3B6D11',borderRadius:'6px',color:'#3B6D11',cursor:'pointer',padding:'5px 12px',fontSize:'13px',width:'100%',marginTop:'2px'}
-          },'+ Aggiungi varietà')
-        )
+      h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'8px'}},
+        (form.varieta||[]).map((v,i)=>h('div',{key:i,style:{background:'#f9f9f7',borderRadius:'10px',padding:'10px',border:'1px solid #e5e5e5',position:'relative'}},
+          h('button',{onClick:()=>setForm(f=>({...f,varieta:(f.varieta||[]).filter((_,j)=>j!==i)})),
+            style:{position:'absolute',top:'8px',right:'8px',background:'transparent',border:'none',color:'#A32D2D',cursor:'pointer',fontSize:'18px',lineHeight:1,padding:0}},'×'),
+          h('label',{className:'lbl'},'Varietà / tipologia'),
+          h('input',{value:v.nome||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],nome:e.target.value};setForm(f=>({...f,varieta:vs}));},
+            placeholder:'Es. Rosa Rossa, Basilico...',style:{marginBottom:'8px'}}),
+          h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'8px'}},
+            h('div',null,h('label',{className:'lbl'},'Quantità'),h('input',{type:'number',value:v.quantita||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],quantita:parseInt(e.target.value)||0};setForm(f=>({...f,varieta:vs}));},placeholder:'0'})),
+            h('div',null,h('label',{className:'lbl'},'Vaso'),h('input',{value:v.vaso||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],vaso:e.target.value};setForm(f=>({...f,varieta:vs}));},placeholder:'Es. 14cm'}))
+          ),
+          h('label',{className:'lbl'},'Fornitore'),
+          h('input',{value:v.fornitore||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],fornitore:e.target.value};setForm(f=>({...f,varieta:vs}));},
+            placeholder:'Nome fornitore',style:{marginBottom:'8px'}}),
+          h('label',{className:'lbl'},'Data entrata'),
+          h('input',{type:'date',value:v.dataEntrata||'',onChange:e=>{const vs=[...(form.varieta||[])];vs[i]={...vs[i],dataEntrata:e.target.value};setForm(f=>({...f,varieta:vs}));}})
+        )),
+        h('button',{
+          onClick:()=>setForm(f=>({...f,varieta:[...(f.varieta||[]),{nome:'',quantita:0,vaso:'',fornitore:'',dataEntrata:''}]})),
+          style:{background:'transparent',border:'1px dashed #3B6D11',borderRadius:'8px',color:'#3B6D11',cursor:'pointer',padding:'10px',fontSize:'14px',width:'100%'}
+        },'+ Aggiungi varietà')
       ),
       (form.varieta||[]).length>0&&h('p',{style:{fontSize:'12px',color:'#3B6D11',marginBottom:'14px'}},
         '📦 Totale: '+((form.varieta||[]).reduce((s,v)=>s+(parseInt(v.quantita)||0),0)).toLocaleString('it-IT')+' piante'
