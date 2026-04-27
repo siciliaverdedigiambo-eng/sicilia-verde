@@ -47,6 +47,17 @@ button{cursor:pointer;font-family:inherit}
 .spin{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:#3B6D11;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media print{body{background:#fff}.no-print{display:none!important}.print-only{display:block!important}}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e5;display:flex;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;border:none;background:transparent;cursor:pointer;gap:3px;-webkit-tap-highlight-color:transparent;position:relative}
+.bnav-icon{font-size:22px;line-height:1}
+.bnav-lbl{font-size:10px;color:#999;line-height:1}
+.bnav-btn.active .bnav-lbl{color:#3B6D11;font-weight:600}
+.bnav-btn.active .bnav-icon{filter:none}
+.bnav-badge{position:absolute;top:4px;right:calc(50% - 16px);background:#E24B4A;color:#fff;border-radius:10px;font-size:10px;font-weight:700;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.content-with-nav{padding-bottom:80px}
+.fab{position:fixed;bottom:72px;right:16px;width:52px;height:52px;border-radius:50%;background:#3B6D11;color:#fff;border:none;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(59,109,17,.4);cursor:pointer;z-index:15;-webkit-tap-highlight-color:transparent}
 .print-only{display:none}
 
 /* ── MOBILE ── */
@@ -1687,57 +1698,179 @@ function RespSettoriTab({data,save,centroId}){
 function RespApp({data,save,user,logout}){
   const ids=user.centroIds||[];
   const [selId,setSelId]=useState(ids.length===1?ids[0]:null);
-  const [tab,setTab]=useState('inserisci');const [ok,setOk]=useState(false);
+  const [tab,setTab]=useState('confermate');
+  const [ok,setOk]=useState('');
+  const [showForm,setShowForm]=useState(false);
+  const [showRich,setShowRich]=useState(false);
   const centro=(data.centri||[]).find(c=>c.id===selId);
-  const tabs=[
-    {id:'inserisci',label:'Inserisci proposta'},
-    {id:'richieste',label:'Richieste pers.'+(((data.richieste||[]).filter(r=>(user.centroIds||[]).includes(r.centroId)&&r.stato==='pendente').length)>0?' ('+((data.richieste||[]).filter(r=>(user.centroIds||[]).includes(r.centroId)&&r.stato==='pendente').length)+')':'')},
-    {id:'confermate',label:'Confermate'},
-    {id:'completate',label:'Completate'},
-    {id:'settori',label:'Settori'},
-    {id:'report',label:'Report'}
-  ];
 
-  if(!ids.length)return h('div',null,h(TopBar,{title:'Responsabile',user,logout}),h('div',{style:{padding:'1.5rem'}},h('div',{className:'card'},h('p',{style:{color:'#666'}},"Nessun centro assegnato. Contatta l'amministratore."))));
+  const nConfermate=(data.lavorazioni||[]).filter(l=>l.centroId===selId&&l.stato==='confermata').length;
+  const nRichiestePendenti=(data.richieste||[]).filter(r=>(user.centroIds||[]).includes(r.centroId)&&r.stato==='pendente').length;
+  const nProposte=(data.lavorazioni||[]).filter(l=>l.centroId===selId&&l.stato==='proposta').length;
 
-  if(!selId)return h('div',{style:{minHeight:'100vh'}},
+  if(!ids.length)return h('div',null,
+    h(TopBar,{title:'Responsabile',user,logout}),
+    h('div',{style:{padding:'1.5rem'}},h('div',{className:'card'},h('p',{style:{color:'#666'}},"Nessun centro assegnato. Contatta l'amministratore.")))
+  );
+
+  // Centro selection
+  if(!selId)return h('div',{style:{minHeight:'100vh',background:'#f3f4f2'}},
     h(TopBar,{title:'Seleziona centro',user,logout}),
-    h('div',{style:{padding:'2rem',maxWidth:'480px',margin:'0 auto'}},
-      h('h2',{style:{fontSize:'16px',fontWeight:500,marginBottom:'1.25rem'}},'Su quale centro vuoi lavorare oggi?'),
+    h('div',{style:{padding:'1.25rem',maxWidth:'480px',margin:'0 auto'}},
+      h('p',{style:{fontSize:'14px',color:'#666',marginBottom:'1rem'}},'Su quale centro vuoi lavorare?'),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'10px'}},
         ids.map(id=>{
-          const c=(data.centri||[]).find(x=>x.id===id);if(!c)return null;
+          const cc=(data.centri||[]).find(x=>x.id===id);if(!cc)return null;
           const proposte=(data.lavorazioni||[]).filter(l=>l.centroId===id&&l.stato==='proposta').length;
           const conf=(data.lavorazioni||[]).filter(l=>l.centroId===id&&l.stato==='confermata').length;
-          return h('button',{key:id,onClick:()=>setSelId(id),className:'btn-n',style:{textAlign:'left',padding:'16px',borderRadius:'12px',display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:'15px'}},
-            h('span',{style:{fontWeight:500}},c.nome),
-            h('div',{style:{display:'flex',gap:'8px',fontSize:'13px'}},
-              proposte>0&&h('span',{style:{color:'#888'}},proposte+' proposte'),
-              conf>0&&h('span',{style:{color:'#3B6D11',fontWeight:500}},conf+' confermate ✓')
-            )
+          const richP=(data.richieste||[]).filter(r=>r.centroId===id&&r.stato==='pendente').length;
+          return h('button',{key:id,onClick:()=>setSelId(id),className:'card',style:{textAlign:'left',border:'none',cursor:'pointer',padding:'1rem',display:'flex',justifyContent:'space-between',alignItems:'center',WebkitTapHighlightColor:'transparent'}},
+            h('div',null,
+              h('div',{style:{fontWeight:600,fontSize:'16px',marginBottom:'4px'}},cc.nome),
+              h('div',{style:{display:'flex',gap:'10px',fontSize:'13px',color:'#888'}},
+                conf>0&&h('span',{style:{color:'#3B6D11',fontWeight:500}},'✓ '+conf+' confermate'),
+                proposte>0&&h('span',null,proposte+' proposte'),
+                richP>0&&h('span',{style:{color:'#E24B4A',fontWeight:500}},'⚠ '+richP+' richieste')
+              )
+            ),
+            h('span',{style:{fontSize:'20px',color:'#ccc'}},'›')
           );
         })
       )
     )
   );
 
-  return h('div',{style:{minHeight:'100vh'}},
-    h(TopBar,{title:centro?.nome||'',user,logout,
-      extra:ids.length>1&&h('button',{onClick:()=>{setSelId(null);setTab('inserisci');setOk(false);},className:'btn-n',style:{padding:'5px 12px',fontSize:'13px'}},'← Cambia centro')
-    }),
-    h('div',{style:{padding:'1.25rem'},className:'main-pad'},
-      h(Tabs,{tabs,active:tab,onChange:t=>{setOk(false);setTab(t);}}),
-      ok&&h('div',{className:'success-box'},h('span',null,'✓ Proposta salvata! L\'admin la esaminerà presto.'),h('button',{onClick:()=>setOk(false),className:'btn-n sm'},'×')),
-      tab==='inserisci'&&h(LavForm,{data,save,centroId:selId,onDone:()=>setOk(true),adminMode:false}),
-      tab==='confermate'&&h(ConfermatTab,{data,save,centroId:selId,readOnly:true}),
+  // Main app with bottom nav
+  const TABS=[
+    {id:'confermate', icon:'✅', label:'Confermate', badge:nConfermate},
+    {id:'proposte',   icon:'📋', label:'Proposte',   badge:nProposte},
+    {id:'richieste',  icon:'📬', label:'Richieste',  badge:nRichiestePendenti},
+    {id:'altro',      icon:'⋯',  label:'Altro',      badge:0},
+  ];
+
+  const changeTab=t=>{setTab(t);setOk('');setShowForm(false);setShowRich(false);};
+
+  return h('div',{style:{minHeight:'100vh',background:'#f3f4f2',paddingBottom:'0'}},
+    // TopBar compatto
+    h('div',{className:'topbar'},
+      h('div',{style:{display:'flex',alignItems:'center',gap:'6px',flex:1,minWidth:0}},
+        ids.length>1&&h('button',{onClick:()=>{setSelId(null);setTab('confermate');},style:{background:'transparent',border:'none',fontSize:'20px',cursor:'pointer',padding:'4px',color:'#3B6D11'}},'‹'),
+        h('div',{style:{minWidth:0}},
+          h('div',{style:{fontWeight:600,fontSize:'14px',lineHeight:1.2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},centro?.nome||''),
+          h('div',{style:{fontSize:'11px',color:'#888'}},user.nome)
+        )
+      ),
+      h('button',{onClick:logout,className:'btn-n',style:{padding:'5px 10px',fontSize:'13px'}},'Esci')
+    ),
+
+    // Contenuto principale
+    h('div',{className:'content-with-nav',style:{padding:'1rem'}},
+      // Success box
+      ok&&h('div',{className:'success-box',style:{marginBottom:'1rem'}},
+        h('span',null,ok),
+        h('button',{onClick:()=>setOk(''),className:'btn-n sm'},'×')
+      ),
+
+      // TAB: CONFERMATE
+      tab==='confermate'&&h('div',null,
+        nConfermate===0
+          ?h('div',{className:'card',style:{textAlign:'center',padding:'2rem'}},
+              h('div',{style:{fontSize:'40px',marginBottom:'8px'}},'✅'),
+              h('p',{style:{color:'#666',fontSize:'14px'}},'Nessuna lavorazione confermata.')
+            )
+          :h(ConfermatTab,{data,save,centroId:selId,readOnly:true})
+      ),
+
+      // TAB: PROPOSTE
+      tab==='proposte'&&h('div',null,
+        showForm
+          ?h('div',null,
+              h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'1rem'}},
+                h('button',{onClick:()=>setShowForm(false),style:{background:'transparent',border:'none',fontSize:'24px',cursor:'pointer',color:'#3B6D11'}},'‹'),
+                h('h3',{style:{fontSize:'15px',fontWeight:500}},'Nuova proposta')
+              ),
+              h(LavForm,{data,save,centroId:selId,onDone:()=>{setShowForm(false);setOk('✓ Proposta salvata! L\'admin la esaminerà presto.');},adminMode:false})
+            )
+          :h('div',null,
+              nProposte===0
+                ?h('div',{className:'card',style:{textAlign:'center',padding:'2rem'}},
+                    h('div',{style:{fontSize:'40px',marginBottom:'8px'}},'📋'),
+                    h('p',{style:{color:'#666',fontSize:'14px',marginBottom:'1rem'}},'Nessuna proposta inserita.')
+                  )
+                :h('div',{style:{marginBottom:'1rem'}},
+                    // Mini lista proposte pendenti
+                    h('p',{style:{fontSize:'13px',color:'#666',marginBottom:'8px'}},nProposte+' proposte in attesa di conferma'),
+                    (data.lavorazioni||[]).filter(l=>l.centroId===selId&&l.stato==='proposta').sort((a,b)=>{
+                      const P={alta:0,media:1,bassa:2,'':3};
+                      return (P[a.priorita||'']??3)-(P[b.priorita||'']??3);
+                    }).map(l=>{
+                      const s=(data.settori||[]).find(x=>x.id===l.settoreId);
+                      const t=(data.tipi||[]).find(x=>x.id===l.tipoId);
+                      const PCOL={alta:'#E24B4A',media:'#EF9F27',bassa:'#639922','':'#ccc'};
+                      return h('div',{key:l.id,className:'card',style:{marginBottom:'8px',borderLeft:'4px solid '+(PCOL[l.priorita||'']||'#ddd')}},
+                        h('div',{style:{fontWeight:500,fontSize:'14px'}},t?.nome||'Lavorazione generica'),
+                        h('div',{style:{fontSize:'13px',color:'#888',marginTop:'3px'}},
+                          (s?.nome?s.nome+' · ':'')+(l.data?'📅 '+l.data:'Nessuna data'),
+                          l.note&&h('span',null,' · '+l.note)
+                        )
+                      );
+                    })
+                  )
+            )
+      ),
+
+      // TAB: RICHIESTE
       tab==='richieste'&&h(RichiesteTab,{data,save,user,isAdmin:false,centroId:selId}),
-      tab==='completate'&&h(CompletateTab,{data,save,centroId:selId}),
-      tab==='report'&&h(ReportTab,{data,centroId:selId}),
-      tab==='settori'&&h(RespSettoriTab,{data,save,centroId:selId})
+
+      // TAB: ALTRO (settori, completate, report)
+      tab==='altro'&&h('div',{style:{display:'flex',flexDirection:'column',gap:'10px'}},
+        [{id:'settori',icon:'🌱',label:'Settori del centro'},
+         {id:'completate',icon:'📂',label:'Lavorazioni completate'},
+         {id:'report',icon:'📊',label:'Report e statistiche'}
+        ].map(item=>h('button',{key:item.id,onClick:()=>changeTab(item.id),className:'card',
+          style:{display:'flex',alignItems:'center',gap:'14px',border:'none',cursor:'pointer',textAlign:'left',WebkitTapHighlightColor:'transparent'}},
+          h('span',{style:{fontSize:'28px'}}),item.icon,
+          h('span',{style:{fontSize:'15px',fontWeight:500}},item.label),
+          h('span',{style:{marginLeft:'auto',fontSize:'20px',color:'#ccc'}},'›')
+        ))
+      ),
+
+      // TAB: SETTORI, COMPLETATE, REPORT (con back)
+      ['settori','completate','report'].includes(tab)&&h('div',null,
+        h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'1rem'}},
+          h('button',{onClick:()=>changeTab('altro'),style:{background:'transparent',border:'none',fontSize:'24px',cursor:'pointer',color:'#3B6D11'}},'‹'),
+          h('h3',{style:{fontSize:'15px',fontWeight:500}},tab==='settori'?'Settori':tab==='completate'?'Completate':'Report')
+        ),
+        tab==='settori'&&h(RespSettoriTab,{data,save,centroId:selId}),
+        tab==='completate'&&h(CompletateTab,{data,save,centroId:selId}),
+        tab==='report'&&h(ReportTab,{data,centroId:selId})
+      )
+    ),
+
+    // FAB + button (solo per proposte e richieste)
+    (tab==='proposte')&&h('button',{
+      onClick:()=>setShowForm(true),
+      className:'fab'
+    },'+'),
+    (tab==='richieste')&&h('button',{
+      onClick:()=>setShowRich(true),
+      className:'fab'
+    },'+'),
+
+    // Bottom Navigation Bar
+    h('nav',{className:'bottom-nav'},
+      TABS.map(t=>h('button',{
+        key:t.id,
+        className:'bnav-btn'+(tab===t.id?' active':''),
+        onClick:()=>changeTab(t.id)
+      },
+        t.badge>0&&h('span',{className:'bnav-badge'},t.badge>9?'9+':t.badge),
+        h('span',{className:'bnav-icon'},t.icon),
+        h('span',{className:'bnav-lbl'},t.label)
+      ))
     )
   );
 }
-
 
 /* ── ROOT APP ── */
 function App(){
