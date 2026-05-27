@@ -2065,6 +2065,26 @@ ${lines}
       createdBy:item.createdBy||'',
       rispostaAt:item.rispostaAt||null
     };
+    if(tbl==='settori')return{
+      id:item.id,
+      centroId:item.centroId||'',
+      nome:item.nome||'',
+      capacita:parseInt(item.capacita)||0,
+      varieta:(item.varieta||[]).map(v=>({
+        nome:v.nome||'',
+        quantita:parseInt(v.quantita)||0,
+        vaso:v.vaso||'',
+        fornitore:v.fornitore||'',
+        dataEntrata:v.dataEntrata||''
+      })),
+      lunghezza:item.lunghezza!=null&&item.lunghezza!==''?parseFloat(item.lunghezza):null,
+      larghezza:item.larghezza!=null&&item.larghezza!==''?parseFloat(item.larghezza):null,
+      note:item.note||''
+    };
+    if(tbl==='centri')return{id:item.id,nome:item.nome||'',indirizzo:item.indirizzo||''};
+    if(tbl==='dipendenti')return{id:item.id,cognome:item.cognome||'',nome:item.nome||'',sesso:item.sesso||'M'};
+    if(tbl==='tipi')return{id:item.id,nome:item.nome||''};
+    if(tbl==='utenti')return{id:item.id,nome:item.nome||'',user:item.user||'',pass:item.pass||'',ruolo:item.ruolo||'responsabile',centroIds:item.centroIds||[],tgChatId:item.tgChatId||null};
     return item;
   }
   async function save(newData){
