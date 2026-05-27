@@ -266,11 +266,13 @@ function CentriTab({data,save}){
                   h('div',{style:{fontWeight:600,fontSize:'14px'}},s.nome),
                   s.capacita>0&&h('div',{style:{fontSize:'12px',color:'#3B6D11',marginTop:'2px'}},'🌱 '+s.capacita.toLocaleString('it-IT')+' piante'),
                   s.bancali&&s.bancali.length>0&&h('div',{style:{fontSize:'11px',color:'#888',marginTop:'2px'}},
-                    '📐 '+s.bancali.map(b=>b.quantita+'banc. '+b.file+'f×'+b.piantePer).join(' | '))
+                    '📐 '+s.bancali.map(b=>b.quantita+'banc. '+b.file+'f×'+b.piantePer).join(' | ')),
+                  s.distanza_gocciolatore&&h('div',{style:{fontSize:'11px',color:'#888',marginTop:'2px'}},
+                    '💧 Gocciolatore: '+s.distanza_gocciolatore+' cm')
                 ),
                 h('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},
                   s.lunghezza&&s.larghezza&&h('span',{style:{fontSize:'11px',color:'#888',background:'#f0f0f0',borderRadius:'4px',padding:'2px 6px'}},s.lunghezza+'×'+s.larghezza+' m'),
-                  h('button',{onClick:()=>{setForm({...s,varieta:s.varieta||[],bancali:s.bancali||[]});setModal('settore');},className:'btn-n sm'},'✏️'),
+                  h('button',{onClick:()=>{setForm({...s,varieta:s.varieta||[],bancali:s.bancali||[],distanza_gocciolatore:s.distanza_gocciolatore||null});setModal('settore');},className:'btn-n sm'},'✏️'),
                   h('button',{onClick:()=>delS(s.id),className:'btn-r sm'},'🗑')
                 )
               ),
@@ -376,6 +378,15 @@ function CentriTab({data,save}){
           onClick:()=>setForm(f=>({...f,bancali:[...(f.bancali||[]),{file:2,piantePer:0,quantita:0}]})),
           style:{background:'transparent',border:'1px dashed #3B6D11',borderRadius:'8px',color:'#3B6D11',cursor:'pointer',padding:'8px',width:'100%',fontSize:'13px',marginBottom:'16px'}
         },'+ Aggiungi tipo bancale'),
+        h('label',{className:'lbl'},'Distanza gocciolatore (cm)'),
+        h('p',{style:{fontSize:'12px',color:'#888',marginBottom:'8px'}},'Distanza tra i gocciolatori in cm — da compilare una volta sola'),
+        h('input',{
+          type:'number',min:0,step:0.1,
+          value:form.distanza_gocciolatore||'',
+          onChange:e=>setForm(f=>({...f,distanza_gocciolatore:e.target.value?parseFloat(e.target.value):null})),
+          placeholder:'es. 30',
+          style:{marginBottom:'16px'}
+        }),
         h('label',{className:'lbl'},'Note'),
         h('textarea',{value:form.note||'',onChange:F('note'),rows:2,style:{marginBottom:'1rem'}}),
         h('button',{onClick:savSettore,className:'btn-g',style:{width:'100%'},disabled:saving},saving?'Salvataggio...':'Salva')
@@ -1202,7 +1213,7 @@ function ReportTab({data,centroId}){
     hdr1.push('Ore totali','Quantità','Note');
     const rows1=[hdr1];
     lav.forEach(l=>{
-      const{centro,settore,tipo,nomi,ore}=getNome(l);
+      const{centro,settore,varieta,tipo,nomi,ore}=getNome(l);
       const row=[l.data||'',centro,settore,varieta,tipo,nomi];
       if(hasDip)row.push(parseFloat((l.oreMap||{})[f.dipId])||0);
       row.push(ore,l.quantita||'',l.note||'');
@@ -1294,7 +1305,7 @@ function ReportTab({data,centroId}){
           h('th',null,'Note')
         )),
         h('tbody',null,lav.map(l=>{
-          const{centro,settore,tipo,nomi,ore}=getNome(l);
+          const{centro,settore,varieta,tipo,nomi,ore}=getNome(l);
           return h('tr',{key:l.id},
             h('td',null,l.data||'—'),
             !centroId&&h('td',{style:{fontSize:'13px'}},centro),
@@ -2025,7 +2036,7 @@ function App(){
   useEffect(()=>{
     Promise.all([sbGet('centri'),sbGet('settori'),sbGet('dipendenti'),sbGet('tipi'),sbGet('utenti'),sbGet('lavorazioni'),sbGet('richieste')])
       .then(([centri,settori,dipendenti,tipi,utenti,lavorazioni,richieste])=>{
-        const normSett=settori.map(s=>({...s,varieta:(s.varieta||[]).map(v=>({nome:v.nome||'',quantita:v.quantita||0,vaso:v.vaso||'',fornitore:v.fornitore||'',dataEntrata:v.dataEntrata||''})),bancali:(s.bancali||[]).map(b=>({file:parseInt(b.file)||2,piantePer:parseInt(b.piantePer)||0,quantita:parseInt(b.quantita)||0})),note:s.note||'',lunghezza:s.lunghezza||null,larghezza:s.larghezza||null}));
+        const normSett=settori.map(s=>({...s,varieta:(s.varieta||[]).map(v=>({nome:v.nome||'',quantita:v.quantita||0,vaso:v.vaso||'',fornitore:v.fornitore||'',dataEntrata:v.dataEntrata||''})),bancali:(s.bancali||[]).map(b=>({file:parseInt(b.file)||2,piantePer:parseInt(b.piantePer)||0,quantita:parseInt(b.quantita)||0})),distanza_gocciolatore:s.distanza_gocciolatore||null,note:s.note||'',lunghezza:s.lunghezza||null,larghezza:s.larghezza||null}));
         settori=normSett;
         const normLav=lavorazioni.map(l=>({...l,dipendentiIds:l.dipendentiIds||[],oreMap:l.oreMap||{},data:l.data||'',priorita:l.priorita||'',stato:l.stato||'proposta',varietaId:l.varietaId||''}));
         const d={centri,settori,dipendenti,tipi,utenti,lavorazioni:normLav,richieste:richieste||[]};
@@ -2123,6 +2134,7 @@ ${lines}
       bancali:(item.bancali||[]).map(b=>({file:parseInt(b.file)||2,piantePer:parseInt(b.piantePer)||0,quantita:parseInt(b.quantita)||0})),
       lunghezza:item.lunghezza!=null&&item.lunghezza!==''?parseFloat(item.lunghezza):null,
       larghezza:item.larghezza!=null&&item.larghezza!==''?parseFloat(item.larghezza):null,
+      distanza_gocciolatore:item.distanza_gocciolatore!=null&&item.distanza_gocciolatore!==''?parseFloat(item.distanza_gocciolatore):null,
       note:item.note||''
     };
     if(tbl==='centri')return{id:item.id,nome:item.nome||'',indirizzo:item.indirizzo||''};
