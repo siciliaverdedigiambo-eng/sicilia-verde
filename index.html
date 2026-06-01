@@ -134,7 +134,11 @@ async function notifyResponsabili(centroId, messaggio, data){
 async function sbGet(t,q){const r=await fetch(SB+'/rest/v1/'+t+'?select=*&limit=2000'+(q?'&'+q:''),{headers:SBH});if(!r.ok)throw new Error(t);return r.json();}
 async function sbIns(t,d){const r=await fetch(SB+'/rest/v1/'+t,{method:'POST',headers:SBH,body:JSON.stringify(d)});return r.json();}
 async function sbUpd(t,id,d){await fetch(SB+'/rest/v1/'+t+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:SBH,body:JSON.stringify(d)});}
-async function sbDel(t,id){await fetch(SB+'/rest/v1/'+t+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:SBH});}
+async function sbDel(t,id){
+  const r=await fetch(SB+'/rest/v1/'+t+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:SBH});
+  if(!r.ok){const err=await r.json().catch(()=>({}));console.error('sbDel error',t,id,err);return false;}
+  return true;
+}
 
 const {useState,useEffect,useRef}=React;
 const h=React.createElement;
@@ -1595,7 +1599,19 @@ function RichiesteTab({data,save,user,isAdmin,centroId}){
     setSaving(false);close();
   };
 
-  const del=async id=>{if(!confirm('Eliminare?'))return;await save({...data,richieste:(data.richieste||[]).filter(r=>r.id!==id)});};
+  const del=async id=>{
+  if(!confirm('Eliminare questa richiesta?'))return;
+  // Prima tenta cancellazione diretta su Supabase
+  const ok=await sbDel('richieste',id);
+  if(!ok){
+    // Fallback: se la DELETE fallisce, segna come completata per bloccare i reminder
+    alert('Impossibile eliminare la richiesta. Verrà marcata come completata per bloccare i reminder.');
+    const r=(data.richieste||[]).find(x=>x.id===id);
+    if(r){await save({...data,richieste:(data.richieste||[]).map(x=>x.id===id?{...x,stato:'completata'}:x)});}
+    return;
+  }
+  await save({...data,richieste:(data.richieste||[]).filter(r=>r.id!==id)});
+};
 
   const STATO={
     pendente:  {label:'In attesa', bg:'#FAC775',tx:'#633806'},
@@ -2047,7 +2063,7 @@ function App(){
 
   // Auto-refresh lavorazioni ogni 60s quando l'admin è loggato
   // Auto-refresh for all users every 30s
-  const lastReminderRef=useRef(0);
+  const lastReminderRef=useRef(Date.now());
   useEffect(()=>{
     if(!user)return;
     const t=setInterval(()=>{
@@ -2060,6 +2076,7 @@ function App(){
         if(user.ruolo==='admin'){
           const now=Date.now();
           if(now-lastReminderRef.current>=30*60*1000){
+            // Verifica che le richieste urgenti esistano ancora su Supabase (fresh check)
             const urgenti=(richieste||[]).filter(r=>r.stato==='pendente'&&r.urgente);
             if(urgenti.length>0){
               lastReminderRef.current=now;
