@@ -1867,6 +1867,9 @@ function RespApp({data,save,user,logout}){
   const [showRich,setShowRich]=useState(false);
   const centro=(data.centri||[]).find(c=>c.id===selId);
 
+  const changeTab=t=>{setTab(t);setOk('');setShowForm(false);setShowRich(false);if(typeof window.__pushNav==='function')window.__pushNav(t);};
+  useEffect(()=>{window.__setAppTab=setTab;return ()=>{if(window.__setAppTab===setTab)window.__setAppTab=null;};},[]);
+
   const nConfermate=(data.lavorazioni||[]).filter(l=>l.centroId===selId&&l.stato==='confermata').length;
   const nRichiestePendenti=(data.richieste||[]).filter(r=>(user.centroIds||[]).includes(r.centroId)&&r.stato==='pendente').length;
   const nProposte=(data.lavorazioni||[]).filter(l=>l.centroId===selId&&l.stato==='proposta').length;
@@ -1910,9 +1913,6 @@ function RespApp({data,save,user,logout}){
     {id:'richieste',  icon:'📬', label:'Richieste',  badge:nRichiestePendenti},
     {id:'altro',      icon:'⋯',  label:'Altro',      badge:0},
   ];
-
-  const changeTab=t=>{setTab(t);setOk('');setShowForm(false);setShowRich(false);if(typeof window.__pushNav==='function')window.__pushNav(t);};
-  useEffect(()=>{window.__setAppTab=setTab;return ()=>{if(window.__setAppTab===setTab)window.__setAppTab=null;};},[]);
 
   return h('div',{style:{minHeight:'100vh',background:'#f3f4f2',paddingBottom:'80px'}},
     // TopBar compatto
@@ -2111,16 +2111,27 @@ ${lines}
   },[user]);
 
   function sanitize(tbl,item){
-    if(tbl==='lavorazioni')return{...item,
+    if(tbl==='lavorazioni')return{
+      id:item.id,
+      centroId:item.centroId||'',
+      settoreId:item.settoreId||'',
+      tipoId:item.tipoId||'',
       data:item.data||null,
       ore:item.ore!=null&&item.ore!==''?parseFloat(item.ore):null,
       dipendentiIds:item.dipendentiIds||[],
       oreMap:item.oreMap||{},
+      quantita:item.quantita||'',
+      note:item.note||'',
       priorita:item.priorita||'',
       stato:item.stato||'proposta',
-      varietaId:item.varietaId||''
+      varietaId:item.varietaId||'',
+      createdAt:item.createdAt||null,
+      createdBy:item.createdBy||null,
+      confermataAt:item.confermataAt||null
     };
-    if(tbl==='richieste')return{...item,
+    if(tbl==='richieste')return{
+      id:item.id,
+      centroId:item.centroId||'',
       dataRichiesta:item.dataRichiesta||null,
       nDipendenti:parseInt(item.nDipendenti)||0,
       dipendentiIds:item.dipendentiIds||[],
@@ -2131,6 +2142,7 @@ ${lines}
       note:item.note||'',
       noteAdmin:item.noteAdmin||'',
       createdBy:item.createdBy||'',
+      createdAt:item.createdAt||null,
       rispostaAt:item.rispostaAt||null
     };
     if(tbl==='settori')return{
