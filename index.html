@@ -1814,7 +1814,7 @@ function RespSettoriTab({data,save,centroId}){
     setSaving(true);
     const varieta=(form.varieta||[]).filter(v=>v.nome?.trim()).map(v=>({nome:v.nome,quantita:parseInt(v.quantita)||0,vaso:v.vaso||'',fornitore:v.fornitore||'',dataEntrata:v.dataEntrata||''}));
     const bancali=(form.bancali||[]).filter(b=>b.piantePer>0).map(b=>({file:parseInt(b.file)||2,piantePer:parseInt(b.piantePer)||0,quantita:parseInt(b.quantita)||0}));
-    const totPiante=varieta.reduce((s,v)=>s+(parseInt(v.quantita)||0),0)||bancali.reduce((s,b)=>s+(parseInt(b.quantita)||0),0);
+    const totPiante=varieta.reduce((s,v)=>s+(parseInt(v.quantita)||0),0)||bancali.reduce((s,b)=>s+(b.quantita*b.file*b.piantePer||0),0);
     const sClean={...form,varieta,bancali,capacita:totPiante||parseInt(form.capacita)||0,
       lunghezza:form.lunghezza?parseFloat(form.lunghezza):null,
       larghezza:form.larghezza?parseFloat(form.larghezza):null,
@@ -1901,11 +1901,19 @@ function RespSettoriTab({data,save,centroId}){
             style:{position:'absolute',top:'8px',right:'8px',background:'transparent',border:'none',color:'#A32D2D',cursor:'pointer',fontSize:'18px',lineHeight:1,padding:0}},'×'),
           h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'}},
             h('div',null,h('label',{className:'lbl',style:{fontSize:'12px'}},'File/bancale'),
-              h('input',{type:'number',value:b.file||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],file:parseInt(e.target.value)||2};setForm(f=>({...f,bancali:bs}));},placeholder:'2'})),
+              h('select',{value:b.file||2,onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],file:parseInt(e.target.value)};setForm(f=>({...f,bancali:bs}));}},
+                h('option',{value:2},'2 file'),
+                h('option',{value:3},'3 file'),
+                h('option',{value:4},'4 file'),
+                h('option',{value:5},'5 file')
+              )),
             h('div',null,h('label',{className:'lbl',style:{fontSize:'12px'}},'Piante/fila'),
-              h('input',{type:'number',value:b.piantePer||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],piantePer:parseInt(e.target.value)||0};setForm(f=>({...f,bancali:bs}));},placeholder:'0'})),
-            h('div',null,h('label',{className:'lbl',style:{fontSize:'12px'}},'Tot. bancali'),
-              h('input',{type:'number',value:b.quantita||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],quantita:parseInt(e.target.value)||0};setForm(f=>({...f,bancali:bs}));},placeholder:'0'}))
+              h('input',{type:'number',min:0,value:b.piantePer||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],piantePer:parseInt(e.target.value)||0};setForm(f=>({...f,bancali:bs}));},placeholder:'es. 50'})),
+            h('div',null,h('label',{className:'lbl',style:{fontSize:'12px'}},'N. bancali'),
+              h('input',{type:'number',min:0,value:b.quantita||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],quantita:parseInt(e.target.value)||0};setForm(f=>({...f,bancali:bs}));},placeholder:'es. 20'}))
+          ),
+          b.quantita&&b.file&&b.piantePer&&h('p',{style:{fontSize:'11px',color:'#3B6D11',marginTop:'6px',fontWeight:500}},
+            '= '+(b.quantita*b.file*b.piantePer).toLocaleString('it-IT')+' piante totali'
           )
         )),
         h('button',{onClick:()=>setForm(f=>({...f,bancali:[...(f.bancali||[]),{file:2,piantePer:0,quantita:0}]})),
