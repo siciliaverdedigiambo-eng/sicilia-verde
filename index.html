@@ -1806,17 +1806,19 @@ function RespSettoriTab({data,save,centroId}){
   const centro=(data.centri||[]).find(c=>c.id===centroId);
   const setts=(data.settori||[]).filter(s=>s.centroId===centroId);
 
-  const openSettore=(item={})=>{setForm({...item,varieta:item.varieta||[]});setModal('settore');};
+  const openSettore=(item={})=>{setForm({...item,varieta:item.varieta||[],bancali:item.bancali||[],distanza_gocciolatore:item.distanza_gocciolatore||null});setModal('settore');};
   const close=()=>{setModal(null);setForm({});};
 
   const savSettore=async()=>{
     if(!form.nome?.trim())return;
     setSaving(true);
     const varieta=(form.varieta||[]).filter(v=>v.nome?.trim()).map(v=>({nome:v.nome,quantita:parseInt(v.quantita)||0,vaso:v.vaso||'',fornitore:v.fornitore||'',dataEntrata:v.dataEntrata||''}));
-    const totPiante=varieta.reduce((s,v)=>s+(parseInt(v.quantita)||0),0);
-    const sClean={...form,varieta,capacita:totPiante||parseInt(form.capacita)||0,
+    const bancali=(form.bancali||[]).filter(b=>b.piantePer>0).map(b=>({file:parseInt(b.file)||2,piantePer:parseInt(b.piantePer)||0,quantita:parseInt(b.quantita)||0}));
+    const totPiante=varieta.reduce((s,v)=>s+(parseInt(v.quantita)||0),0)||bancali.reduce((s,b)=>s+(parseInt(b.quantita)||0),0);
+    const sClean={...form,varieta,bancali,capacita:totPiante||parseInt(form.capacita)||0,
       lunghezza:form.lunghezza?parseFloat(form.lunghezza):null,
       larghezza:form.larghezza?parseFloat(form.larghezza):null,
+      distanza_gocciolatore:form.distanza_gocciolatore!=null&&form.distanza_gocciolatore!==''?parseFloat(form.distanza_gocciolatore):null,
       fornitore:form.fornitore||'',dataEntrata:form.dataEntrata||null,note:form.note||''};
     const newSettori=form.id?data.settori.map(x=>x.id===form.id?sClean:x):[...data.settori,{id:gid(),centroId,...sClean}];
     await save({...data,settori:newSettori});
@@ -1891,6 +1893,31 @@ function RespSettoriTab({data,save,centroId}){
       form.lunghezza&&form.larghezza&&h('p',{style:{fontSize:'12px',color:'#3B6D11',marginBottom:'12px'}},
         '📐 Superficie: '+(parseFloat(form.lunghezza)*parseFloat(form.larghezza)).toFixed(1)+' m²'
       ),
+
+      h('label',{className:'lbl'},'Tipo bancale'),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'8px'}},
+        (form.bancali||[]).map((b,i)=>h('div',{key:i,style:{background:'#f9f9f7',borderRadius:'10px',padding:'10px',border:'1px solid #e5e5e5',position:'relative'}},
+          h('button',{onClick:()=>setForm(f=>({...f,bancali:(f.bancali||[]).filter((_,j)=>j!==i)})),
+            style:{position:'absolute',top:'8px',right:'8px',background:'transparent',border:'none',color:'#A32D2D',cursor:'pointer',fontSize:'18px',lineHeight:1,padding:0}},'×'),
+          h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'}},
+            h('div',null,h('label',{className:'lbl',style:{fontSize:'12px'}},'File/bancale'),
+              h('input',{type:'number',value:b.file||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],file:parseInt(e.target.value)||2};setForm(f=>({...f,bancali:bs}));},placeholder:'2'})),
+            h('div',null,h('label',{className:'lbl',style:{fontSize:'12px'}},'Piante/fila'),
+              h('input',{type:'number',value:b.piantePer||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],piantePer:parseInt(e.target.value)||0};setForm(f=>({...f,bancali:bs}));},placeholder:'0'})),
+            h('div',null,h('label',{className:'lbl',style:{fontSize:'12px'}},'Tot. bancali'),
+              h('input',{type:'number',value:b.quantita||'',onChange:e=>{const bs=[...(form.bancali||[])];bs[i]={...bs[i],quantita:parseInt(e.target.value)||0};setForm(f=>({...f,bancali:bs}));},placeholder:'0'}))
+          )
+        )),
+        h('button',{onClick:()=>setForm(f=>({...f,bancali:[...(f.bancali||[]),{file:2,piantePer:0,quantita:0}]})),
+          style:{background:'transparent',border:'1px dashed #3B6D11',borderRadius:'8px',color:'#3B6D11',cursor:'pointer',padding:'10px',fontSize:'14px',width:'100%'}
+        },'+ Aggiungi tipo bancale')
+      ),
+      h('label',{className:'lbl'},'Distanza gocciolatore (cm)'),
+      h('input',{type:'number',step:'1',
+        value:form.distanza_gocciolatore||'',
+        onChange:e=>setForm(f=>({...f,distanza_gocciolatore:e.target.value?parseFloat(e.target.value):null})),
+        placeholder:'Es. 33',style:{marginBottom:'14px'}}),
+
       h('label',{className:'lbl'},'Note'),
       h('textarea',{value:form.note||'',onChange:F('note'),rows:2,style:{marginBottom:'1rem'}}),
       h('button',{onClick:savSettore,className:'btn-g',style:{width:'100%'},disabled:saving},saving?'Salvataggio...':'Salva')
